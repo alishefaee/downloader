@@ -1,6 +1,8 @@
 import express from "express"
 import cors from "cors"
 import ytdl, {videoFormat} from 'ytdl-core'
+import {downloadVideo} from './youtube'
+import path from "path";
 
 const router = express.Router()
 
@@ -8,7 +10,7 @@ router.use(cors({
     origin: '*'
 }))
 
-interface ICache {
+export interface ICache {
     url:string,
     vid:string,
     title:string,
@@ -46,7 +48,10 @@ router.get('/download', async (req: express.Request, res: express.Response) => {
     return res.json(resp)
 })
 
-router.get('/send', (req: express.Request, res: express.Response) => {
+router.get('/send', async (req: express.Request, res: express.Response) => {
+    let {v_id} = req.body
+    let obj = cache.get(v_id)
+    await downloadVideo(obj, path.join(__dirname, 'public', `${obj.title}.mp4`))
     res.send("OK")
     return
 })
