@@ -1,7 +1,7 @@
 import express from "express"
 import cors from "cors"
 import ytdl, {videoFormat} from 'ytdl-core'
-import {downloadVideo} from './youtube'
+import {downloadVideo,playlistInfo} from './youtube'
 import path from "path";
 
 const router = express.Router()
@@ -17,7 +17,6 @@ export interface ICache {
     formats:videoFormat[]
 }
 
-// let cache: { [key:string]: ICache }
 let cache = new Map<string,ICache>()
 
 setInterval(()=>{
@@ -34,7 +33,7 @@ router.get('/', (req: express.Request, res: express.Response) => {
     return res.send("Home Page")
 })
 
-router.get('/download', async (req: express.Request, res: express.Response) => {
+router.get('/video-info', async (req: express.Request, res: express.Response) => {
     let {url} = req.query
     let v_id = url.split('v=')[1]
     let info = await ytdl.getInfo(url)
@@ -48,12 +47,18 @@ router.get('/download', async (req: express.Request, res: express.Response) => {
     return res.json(resp)
 })
 
-router.get('/send', async (req: express.Request, res: express.Response) => {
+router.get('/download', async (req: express.Request, res: express.Response) => {
     let {v_id} = req.body
     let obj = cache.get(v_id)
     await downloadVideo(obj, path.join(__dirname, 'public', `${obj.title}.mp4`))
+    cache.delete(v_id)
     res.send("OK")
     return
+})
+
+router.get('/playlist', async (req: express.Request, res: express.Response) => {
+    let {url} = req.body
+    return res.json(await playlistInfo(url))
 })
 
 export default router
