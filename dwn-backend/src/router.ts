@@ -6,13 +6,11 @@ import path from "path";
 
 const router = express.Router()
 
-router.use(cors({
-    origin: '*'
-}))
+router.use(cors())
 
 export interface ICache {
     url:string,
-    vid:string,
+    v_id:string,
     title:string,
     formats:videoFormat[]
 }
@@ -34,30 +32,36 @@ router.get('/', (req: express.Request, res: express.Response) => {
 })
 
 router.get('/video-info', async (req: express.Request, res: express.Response) => {
-    let {url} = req.query
-    let v_id = url.split('v=')[1]
-    let info = await ytdl.getInfo(url)
+    let {url}: any = req.query
+    let v_id = url!.split('v=')[1]
+    let info = await ytdl.getInfo(v_id)
     let resp = {
         url: "https://www.youtube.com/embed/" + v_id,
-        vid: v_id,
+        v_id: v_id,
         title: info.videoDetails.title,
         formats: info.formats,
-    }
+    }//
     cache.set(v_id,resp)
     return res.json(resp)
 })
 
-router.get('/download', async (req: express.Request, res: express.Response) => {
-    let {v_id} = req.body
+router.post('/download', async (req: any, res: express.Response) => {
+    let {v_id,url} = req.body
     let obj = cache.get(v_id)
-    await downloadVideo(obj, path.join(__dirname, 'public', `${obj.title}.mp4`))
+    if (!obj){
+        throw Error("No obj found")
+    }
+    await downloadVideo(obj,url, path.join(__dirname,'..', 'public', `${obj.title}.mp4`)) //
     cache.delete(v_id)
     res.send("OK")
     return
 })
 
 router.get('/playlist', async (req: express.Request, res: express.Response) => {
-    let {url} = req.body
+    let {url}:any = req.query
+    // let link = url!.split('url=')[1]
+    console.log('url',url)
+    // console.log('link',link)
     return res.json(await playlistInfo(url))
 })
 
