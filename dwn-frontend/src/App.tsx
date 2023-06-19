@@ -1,19 +1,18 @@
 import {useState} from 'react'
-import reactLogo from './assets/react.svg'
-import viteLogo from '/vite.svg'
 import './App.css'
 import axios from "axios";
 import {ICache} from "./interfaces/viedo-data.interface";
+import {IPlaylist} from "./interfaces/playlist.interface";
 
-const HOST = 'localhost:3000'
+const HOST = 'http://127.0.0.1:3000'
 
 
 function App() {
     const [videoUrl, setVideoUrl] = useState('')
     const [playlistUrl, setPlaylistUrl] = useState('')
     const [videoData, setVideoData] = useState<ICache|null>({})
-    const [playlistData, setPlaylistData] = useState<string[] | undefined>(undefined)
-    const [downloadFinished,setDownloadFinished] = useState(false)
+    const [playlistData, setPlaylistData] = useState<IPlaylist | undefined>(undefined)
+    const [downloadFinished,setDownloadFinished] = useState(true)
 
     async function videoGetInfo() {
         try {
@@ -27,8 +26,9 @@ function App() {
 
     async function playlistGetInfo() {
         try {
-            setDownloadFinished(false)
-            let resp = await axios.get(`${HOST}/playlist?url=${playlistUrl}`)
+            setDownloadFinished(true)
+            let resp = await axios.get(`${HOST}/playlist`,{params:{url:playlistUrl}})
+            console.log(resp.data)
             setPlaylistData(resp.data)
         } catch (e) {
             console.log(e)
@@ -44,10 +44,14 @@ function App() {
         }
     }
 
+    function downloadAllPly() {
+
+    }
+
     return (
         <>
             <div>
-                {downloadFinished?<p>Finished</p>:<p>Downloading</p>}
+                {downloadFinished?<p>No Download</p>:<p>Downloading</p>}
                 <label htmlFor="input-video">Video Url</label>
                 <input
                     id='input-video'
@@ -67,19 +71,27 @@ function App() {
                 {videoData ?
                     <div>
                         <p>{videoData.title}</p>
-                        {videoData.formats.map(vid=><p>
-                            <span>vid.container</span> 
-                            <span>vid.qualityLabel</span> 
-                            <span>vid.height</span> 
-                            <span>vid.contentLength</span> 
-                            <span>vid.approxDurationMs</span> 
-                            <span>vid.targetDurationSec</span> 
-                            <span>vid.maxDvrDurationSec</span> 
+                        {videoData.formats?.map(vid=><p>
+                            <span>{vid.container}</span>&#8739;
+                            <span>{vid.qualityLabel}</span>&#8739;
+                            <span>{(vid.contentLength/1024/1024).toFixed(1)} MB</span>&#8739;
+                            <span>{(vid.approxDurationMs/1000/60).toFixed(1)} Min</span>
+                            <span>{vid.targetDurationSec}</span>
+                            <span>{vid.maxDvrDurationSec}</span>
                             <button onClick={(e)=>downloadVideo(e,videoData.v_id,vid.url)}>Download</button>
                         </p>)}
                     </div>
                     : null
                 }
+                {playlistData?<div>
+                    <p>{playlistData.title}&#8739;count:{playlistData.estimatedItemCount}</p>
+                    <button onClick={()=>{downloadAllPly()}}>Download All</button>
+                    {playlistData.items.map(item=><p>
+                        <span>{item.title}</span>&#8739;
+                        <span>{item.shortUrl}</span>&#8739;
+                        <span>{item.duration} Min</span>&#8739;
+                    </p>)}
+                </div>:null}
             </div>
         </>
     )
